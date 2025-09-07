@@ -1,6 +1,6 @@
 /*!
  * 
- * across-tabs "1.3.1"
+ * across-tabs "1.4.1"
  * https://github.com/wingify/across-tabs
  * MIT licensed
  * 
@@ -16,7 +16,7 @@
 		exports["AcrossTabs"] = factory();
 	else
 		root["AcrossTabs"] = factory();
-})(this, function() {
+})(typeof self !== 'undefined' ? self : this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -1121,9 +1121,11 @@ PostMessageListener._onLoad = function (data) {
       if (tabInfo.id) {
         tabs = _tab2.default.getAll();
         if (tabs.length) {
-          window.newlyTabOpened = tabs[tabs.length - 1];
-          window.newlyTabOpened.id = tabInfo.id;
-          window.newlyTabOpened.name = tabInfo.name || tabInfo.windowName;
+          // Find the specific tab that sent the LOADED message by its ID
+          window.newlyTabOpened = _array2.default.searchByKeyName(tabs, 'id', tabInfo.id);
+          if (window.newlyTabOpened) {
+            window.newlyTabOpened.name = tabInfo.name || tabInfo.windowName;
+          }
         }
       }
     } catch (e) {
