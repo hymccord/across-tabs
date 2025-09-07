@@ -32,8 +32,9 @@ let PostMessageListener = {};
 /**
  * OnLoad Event - it serves as an communication establishment source from Child tab
  */
-PostMessageListener._onLoad = data => {
-  let tabs,
+PostMessageListener._onLoad = (data, source) => {
+  let tab,
+    tabs,
     dataToSend,
     tabInfo = data.split(PostMessageEventNamesEnum.LOADED)[1];
 
@@ -47,9 +48,9 @@ PostMessageListener._onLoad = data => {
         tabs = tabUtils.getAll();
         if (tabs.length) {
           // Find the specific tab that sent the LOADED message by its ID
-          window.newlyTabOpened = arrayUtils.searchByKeyName(tabs, 'id', tabInfo.id);
-          if (window.newlyTabOpened) {
-            window.newlyTabOpened.name = tabInfo.name || tabInfo.windowName;
+          tab = arrayUtils.searchByKeyName(tabs, 'id', tabInfo.id);
+          if (tab) {
+            tab.name = tabInfo.name || tabInfo.windowName;
           }
         }
       }
@@ -58,15 +59,21 @@ PostMessageListener._onLoad = data => {
     }
   }
 
-  if (window.newlyTabOpened) {
+  if (source && !tab) {
+    // Fallback - if tab not found by ID, find it by its window reference
+    tabs = tabUtils.getAll();
+    tab = arrayUtils.searchByKeyName(tabs, 'ref', source);
+  }
+
+  if (tab) {
     try {
       dataToSend = PostMessageEventNamesEnum.HANDSHAKE_WITH_PARENT;
       dataToSend += tabUtils.config.stringify({
-        id: window.newlyTabOpened.id,
-        name: window.newlyTabOpened.name || window.newlyTabOpened.windowName,
+        id: tab.id,
+        name: tab.name || tab.windowName,
         parentName: window.name
       });
-      tabUtils.sendMessage(window.newlyTabOpened, dataToSend, tabInfo.isSiteInsideFrame);
+      tabUtils.sendMessage(tab, dataToSend, tabInfo.isSiteInsideFrame);
     } catch (e) {
       throw new Error(WarningTextEnum.INVALID_JSON);
     }
@@ -98,30 +105,21 @@ PostMessageListener._onCustomMessage = (data, type) => {
   event = new CustomEvent('onCustomChildMessage', { detail: eventData });
 
   window.dispatchEvent(event);
-  // window.newlyTabOpened = null;
 };
 
 /**
- * onBeforeUnload Event - Tells parent that either Child tab was closed or refreshed.
+ * onBeforeUnload Event - Tells parent that Child tab was either closed or refreshed.
  * Child uses native `ON_BEFORE_UNLOAD` method to notify Parent.
- *
- * It sets the newlyTabOpened variable accordingly
  *
  * @param  {Object} data
  */
-PostMessageListener._onBeforeUnload = data => {
-  let tabs,
-    tabInfo = data.split(PostMessageEventNamesEnum.ON_BEFORE_UNLOAD)[1];
+PostMessageListener._onBeforeUnload = (data) => {
+  let tabInfo = data.split(PostMessageEventNamesEnum.ON_BEFORE_UNLOAD)[1];
 
   try {
     tabInfo = tabUtils.config.parse(tabInfo);
   } catch (e) {
     throw new Error(WarningTextEnum.INVALID_JSON);
-  }
-
-  if (tabUtils.tabs.length) {
-    tabs = tabUtils.getAll();
-    window.newlyTabOpened = arrayUtils.searchByKeyName(tabs, 'id', tabInfo.id) || window.newlyTabOpened;
   }
 
   // CustomEvent is not supported in IE, but polyfill will take care of it
@@ -135,6 +133,7 @@ PostMessageListener._onBeforeUnload = data => {
  * @param  {Object} message
  */
 PostMessageListener.onNewTab = message => {
+  let source = message.source;
   let data = message.data;
 
   /**
@@ -152,7 +151,7 @@ PostMessageListener.onNewTab = message => {
   }
 
   if (data.indexOf(PostMessageEventNamesEnum.LOADED) > -1) {
-    PostMessageListener._onLoad(data);
+    PostMessageListener._onLoad(data, source);
   } else if (data.indexOf(PostMessageEventNamesEnum.CUSTOM) > -1) {
     PostMessageListener._onCustomMessage(data, PostMessageEventNamesEnum.CUSTOM);
   } else if (data.indexOf(PostMessageEventNamesEnum.HANDSHAKE) > -1) {

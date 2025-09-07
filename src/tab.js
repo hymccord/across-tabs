@@ -26,12 +26,6 @@ class Tab {
 
     domUtils.disable('data-tab-opener');
 
-    window.newlyTabOpened = {
-      id: this.id,
-      name: this.name || this.windowName,
-      ref: this.ref
-    };
-
     // Push it to the list of tabs
     tabUtils.addNew(this);
 
