@@ -46,9 +46,11 @@ PostMessageListener._onLoad = data => {
       if (tabInfo.id) {
         tabs = tabUtils.getAll();
         if (tabs.length) {
-          window.newlyTabOpened = tabs[tabs.length - 1];
-          window.newlyTabOpened.id = tabInfo.id;
-          window.newlyTabOpened.name = tabInfo.name || tabInfo.windowName;
+          // Find the specific tab that sent the LOADED message by its ID
+          window.newlyTabOpened = arrayUtils.searchByKeyName(tabs, 'id', tabInfo.id);
+          if (window.newlyTabOpened) {
+            window.newlyTabOpened.name = tabInfo.name || tabInfo.windowName;
+          }
         }
       }
     } catch (e) {
