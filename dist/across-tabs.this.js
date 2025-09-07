@@ -70,7 +70,7 @@ this["AcrossTabs"] =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -133,188 +133,42 @@ exports.default = WarningTextEnum;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-
-var _PostMessageEventNamesEnum = __webpack_require__(0);
-
-var _PostMessageEventNamesEnum2 = _interopRequireDefault(_PostMessageEventNamesEnum);
-
-var _array = __webpack_require__(3);
-
-var _array2 = _interopRequireDefault(_array);
-
-var _TabStatusEnum = __webpack_require__(4);
-
-var _TabStatusEnum2 = _interopRequireDefault(_TabStatusEnum);
-
-var _WarningTextEnum = __webpack_require__(1);
-
-var _WarningTextEnum2 = _interopRequireDefault(_WarningTextEnum);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 /**
- * A Tab utility file to deal with tab operations
+ * This utility helps enabling/disabling the Link/Button on the Parent Tab.
+ * As soon as, user clicks on link/btn to open a new tab, the link/btn gets disabled.
+ * Once child communicates for the first time with the Parent, the link/btn is re-enabled to open up new tab.
+ * This feature is toggleable and can be used explicitly putting a data attribute on the link/btn.
+ *
+ * <a href="/demo.html" data-tab-opener="parent" target="_blank" on-click="parent.openNewTab(config)">Open Tab</a>
  */
+var domUtils = {
+  disable: function disable(selector) {
+    if (!selector) {
+      return false;
+    }
 
-var tabUtils = {
-  tabs: [],
-  config: {}
-};
+    var i = void 0,
+        ATOpenerElems = document.querySelectorAll('[' + selector + ']');
 
-/**
- * Remove a tab from a list of all tabs.
- * This is required when users opts for removing the closed tabs from the list of tabs.
- * This can be done explictly by passing `removeClosedTabs` key while instantiating Parent.
- * @param  {Object} tab
- */
-tabUtils._remove = function (tab) {
-  var index = void 0;
+    for (i = 0; i < ATOpenerElems.length; i++) {
+      ATOpenerElems[i].setAttribute('disabled', 'disabled');
+    }
+  },
+  enable: function enable(selector) {
+    if (!selector) {
+      return false;
+    }
 
-  index = _array2.default.searchByKeyName(tabUtils.tabs, 'id', tab.id, 'index');
-  tabUtils.tabs.splice(index, 1);
-};
+    var i = void 0,
+        ATOpenerElems = document.querySelectorAll('[' + selector + ']');
 
-/**
- * As explained in `event-listeners/postmessage.js` file,
- * the data received from postmessage API is further processed based on our convention
- * @param  {String} msg
- * @return {String} modified msg
- */
-tabUtils._preProcessMessage = function (msg) {
-  // make msg always an object to support JSON support
-  try {
-    msg = tabUtils.config.stringify(msg);
-  } catch (e) {
-    throw new Error(_WarningTextEnum2.default.INVALID_JSON);
-  }
-
-  if (msg && msg.indexOf(_PostMessageEventNamesEnum2.default.PARENT_COMMUNICATED) === -1) {
-    msg = _PostMessageEventNamesEnum2.default.PARENT_COMMUNICATED + msg;
-  }
-
-  return msg;
-};
-/**
- * Add a new tab to the Array of tabs
- * @param  {Object} tab
- * @return {Object} - this
- */
-tabUtils.addNew = function (tab) {
-  tabUtils.tabs.push(tab);
-  return undefined;
-};
-/**
- * Filter out all the opened tabs
- * @return {Array} - only the opened tabs
- */
-tabUtils.getOpened = function () {
-  return tabUtils.tabs.filter(function (tab) {
-    return tab.status === _TabStatusEnum2.default.OPEN;
-  });
-};
-/**
- * Filter out all the closed tabs
- * @return {Array} - only the closed tabs
- */
-tabUtils.getClosed = function () {
-  return tabUtils.tabs.filter(function (tab) {
-    return tab.status === _TabStatusEnum2.default.CLOSE;
-  });
-};
-/**
- * To get list of all tabs(closed/opened).
- * Note: Closed tabs will not be returned if `removeClosedTabs` key is paased while instantiaiting Parent.
- * @return {Array} - list of all tabs
- */
-tabUtils.getAll = function () {
-  return tabUtils.tabs;
-};
-
-/**
- * Close a specific tab
- * @param  {String} id
- * @return {Object} this
- */
-tabUtils.closeTab = function (id) {
-  var tab = _array2.default.searchByKeyName(tabUtils.tabs, 'id', id);
-
-  if (tab && tab.ref) {
-    tab.ref.close();
-    tab.status = _TabStatusEnum2.default.CLOSE;
-  }
-
-  return tabUtils;
-  // --tabUtils.tabs.length;
-};
-/**
- * Close all opened tabs using a native method `close` available on window.open reference.
- * @return {tabUtils} this
- */
-tabUtils.closeAll = function () {
-  var i = void 0;
-
-  for (i = 0; i < tabUtils.tabs.length; i++) {
-    if (tabUtils.tabs[i] && tabUtils.tabs[i].ref) {
-      tabUtils.tabs[i].ref.close();
-      tabUtils.tabs[i].status = _TabStatusEnum2.default.CLOSE;
+    for (i = 0; i < ATOpenerElems.length; i++) {
+      ATOpenerElems[i].removeAttribute('disabled');
     }
   }
-
-  return tabUtils;
-};
-/**
- * Send a postmessage to every opened Child tab(excluding itself i.e Parent Tab)
- * @param  {String} msg
- * @param  {Boolean} isSiteInsideFrame
- */
-tabUtils.broadCastAll = function (msg, isSiteInsideFrame) {
-  var i = void 0,
-      tabs = tabUtils.getOpened();
-
-  msg = tabUtils._preProcessMessage(msg);
-
-  for (i = 0; i < tabs.length; i++) {
-    tabUtils.sendMessage(tabs[i], msg, isSiteInsideFrame);
-  }
-
-  return tabUtils;
-};
-/**
- * Send a postmessage to a specific Child tab
- * @param  {String} id
- * @param  {String} msg
- * @param  {Boolean} isSiteInsideFrame
- */
-tabUtils.broadCastTo = function (id, msg, isSiteInsideFrame) {
-  var targetedTab = void 0,
-      tabs = tabUtils.getAll();
-
-  msg = tabUtils._preProcessMessage(msg);
-
-  targetedTab = _array2.default.searchByKeyName(tabs, 'id', id); // TODO: tab.id
-  tabUtils.sendMessage(targetedTab, msg, isSiteInsideFrame);
-
-  return tabUtils;
 };
 
-/**
- * Send a postMessage to the desired window/frame
- * @param  {Object}  target
- * @param  {String}  msg
- * @param  {Boolean} isSiteInsideFrame
- */
-tabUtils.sendMessage = function (target, msg, isSiteInsideFrame) {
-  var origin = tabUtils.config.origin || '*';
-  if (isSiteInsideFrame && target.ref[0]) {
-    for (var i = 0; i < target.ref.length; i++) {
-      target.ref[i].postMessage(msg, origin);
-    }
-  } else if (target.ref && target.ref.top) {
-    target.ref.top.postMessage(msg, origin);
-  }
-};
-
-exports.default = tabUtils;
+exports.default = domUtils;
 
 /***/ }),
 /* 3 */
@@ -429,55 +283,8 @@ exports.default = TabStatusEnum;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-/**
- * This utility helps enabling/disabling the Link/Button on the Parent Tab.
- * As soon as, user clicks on link/btn to open a new tab, the link/btn gets disabled.
- * Once child communicates for the first time with the Parent, the link/btn is re-enabled to open up new tab.
- * This feature is toggleable and can be used explicitly putting a data attribute on the link/btn.
- *
- * <a href="/demo.html" data-tab-opener="parent" target="_blank" on-click="parent.openNewTab(config)">Open Tab</a>
- */
-var domUtils = {
-  disable: function disable(selector) {
-    if (!selector) {
-      return false;
-    }
 
-    var i = void 0,
-        ATOpenerElems = document.querySelectorAll('[' + selector + ']');
-
-    for (i = 0; i < ATOpenerElems.length; i++) {
-      ATOpenerElems[i].setAttribute('disabled', 'disabled');
-    }
-  },
-  enable: function enable(selector) {
-    if (!selector) {
-      return false;
-    }
-
-    var i = void 0,
-        ATOpenerElems = document.querySelectorAll('[' + selector + ']');
-
-    for (i = 0; i < ATOpenerElems.length; i++) {
-      ATOpenerElems[i].removeAttribute('disabled');
-    }
-  }
-};
-
-exports.default = domUtils;
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _parent = __webpack_require__(7);
+var _parent = __webpack_require__(6);
 
 var _parent2 = _interopRequireDefault(_parent);
 
@@ -499,7 +306,7 @@ var AcrossTabs = {
 exports.default = AcrossTabs;
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -513,15 +320,15 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _tab = __webpack_require__(8);
+var _tab = __webpack_require__(7);
 
 var _tab2 = _interopRequireDefault(_tab);
 
-var _tab3 = __webpack_require__(2);
+var _tab3 = __webpack_require__(9);
 
 var _tab4 = _interopRequireDefault(_tab3);
 
-var _dom = __webpack_require__(5);
+var _dom = __webpack_require__(2);
 
 var _dom2 = _interopRequireDefault(_dom);
 
@@ -573,13 +380,13 @@ var Parent = function () {
       config.stringify = JSON.stringify;
     }
 
-    // reset tabs with every new Object
-    _tab4.default.tabs = [];
+    // Create a new TabUtils instance for this Parent instance
+    this.tabUtils = new _tab4.default(config);
 
-    this.Tab = _tab2.default;
+    // Create a PostMessageListener bound to this Parent's tabUtils instance
+    this.postMessageListener = (0, _postmessage2.default)(this.tabUtils);
+
     _extends(this, config);
-
-    _tab4.default.config = config;
 
     if (this.shouldInitImmediately) {
       this.init();
@@ -590,8 +397,8 @@ var Parent = function () {
     key: 'addInterval',
     value: function addInterval() {
       var i = void 0,
-          tabs = _tab4.default.getAll(),
-          openedTabs = _tab4.default.getOpened();
+          tabs = this.tabUtils.getAll(),
+          openedTabs = this.tabUtils.getOpened();
 
       // don't poll if all tabs are in CLOSED states
       if (!openedTabs || !openedTabs.length) {
@@ -657,8 +464,8 @@ var Parent = function () {
 
       // OPEN to CLOSE state
       if (oldStatus === _TabStatusEnum2.default.OPEN && newStatus === _TabStatusEnum2.default.CLOSE) {
-        // remove tab from tabUtils
-        _tab4.default._remove(tab);
+        // remove tab from this.tabUtils
+        this.tabUtils._remove(tab);
       }
       // Change from CLOSE to OPEN state is never gonna happen ;)
     }
@@ -703,8 +510,8 @@ var Parent = function () {
     value: function addEventListeners() {
       var _this2 = this;
 
-      window.removeEventListener('message', _postmessage2.default.onNewTab);
-      window.addEventListener('message', _postmessage2.default.onNewTab);
+      window.removeEventListener('message', this.postMessageListener.onNewTab);
+      window.addEventListener('message', this.postMessageListener.onNewTab);
 
       window.removeEventListener('onCustomChildMessage', this.customEventUnListener);
       window.addEventListener('onCustomChildMessage', function (ev) {
@@ -718,7 +525,7 @@ var Parent = function () {
 
       // Let children tabs know when Parent is closed / refereshed.
       window.onbeforeunload = function () {
-        _tab4.default.broadCastAll(_PostMessageEventNamesEnum2.default.PARENT_DISCONNECTED);
+        _this2.tabUtils.broadCastAll(_PostMessageEventNamesEnum2.default.PARENT_DISCONNECTED);
       };
     }
 
@@ -742,7 +549,7 @@ var Parent = function () {
   }, {
     key: 'getAllTabs',
     value: function getAllTabs() {
-      return _tab4.default.getAll();
+      return this.tabUtils.getAll();
     }
 
     /**
@@ -753,7 +560,7 @@ var Parent = function () {
   }, {
     key: 'getOpenedTabs',
     value: function getOpenedTabs() {
-      return _tab4.default.getOpened();
+      return this.tabUtils.getOpened();
     }
 
     /**
@@ -764,7 +571,7 @@ var Parent = function () {
   }, {
     key: 'getClosedTabs',
     value: function getClosedTabs() {
-      return _tab4.default.getClosed();
+      return this.tabUtils.getClosed();
     }
 
     /**
@@ -775,7 +582,7 @@ var Parent = function () {
   }, {
     key: 'closeAllTabs',
     value: function closeAllTabs() {
-      return _tab4.default.closeAll();
+      return this.tabUtils.closeAll();
     }
 
     /**
@@ -786,7 +593,7 @@ var Parent = function () {
   }, {
     key: 'closeTab',
     value: function closeTab(id) {
-      return _tab4.default.closeTab(id);
+      return this.tabUtils.closeTab(id);
     }
 
     /**
@@ -797,7 +604,7 @@ var Parent = function () {
   }, {
     key: 'broadCastAll',
     value: function broadCastAll(msg) {
-      return _tab4.default.broadCastAll(msg);
+      return this.tabUtils.broadCastAll(msg);
     }
 
     /**
@@ -808,7 +615,7 @@ var Parent = function () {
   }, {
     key: 'broadCastTo',
     value: function broadCastTo(id, msg) {
-      return _tab4.default.broadCastTo(id, msg);
+      return this.tabUtils.broadCastTo(id, msg);
     }
 
     /**
@@ -829,7 +636,7 @@ var Parent = function () {
         throw new Error(_WarningTextEnum2.default.URL_REQUIRED);
       }
 
-      tab = new this.Tab();
+      tab = new _tab2.default(this.tabUtils);
       tab.create(config);
 
       // If polling is already there, don't set it again
@@ -861,7 +668,7 @@ var Parent = function () {
 exports.default = Parent;
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -875,15 +682,11 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _tab = __webpack_require__(2);
-
-var _tab2 = _interopRequireDefault(_tab);
-
-var _uuid = __webpack_require__(9);
+var _uuid = __webpack_require__(8);
 
 var _uuid2 = _interopRequireDefault(_uuid);
 
-var _dom = __webpack_require__(5);
+var _dom = __webpack_require__(2);
 
 var _dom2 = _interopRequireDefault(_dom);
 
@@ -895,12 +698,14 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var Tab = function () {
   /**
    * Invoked when the object is instantiated
+   * @param {Object} tabUtils - Instance of TabUtils to use for this tab
    */
-  function Tab() {
+  function Tab(tabUtils) {
     _classCallCheck(this, Tab);
 
     // Set name of Parent tab if not already defined
     window.name = window.name || 'PARENT_TAB';
+    this.tabUtils = tabUtils;
   }
   /**
    * Open a new tab
@@ -914,21 +719,15 @@ var Tab = function () {
     value: function create(config) {
       config = config || {};
       _extends(this, config);
-      this.id = _uuid2.default.generate() || _tab2.default.tabs.length + 1;
+      this.id = _uuid2.default.generate() || this.tabUtils.tabs.length + 1;
       this.status = 'open';
       // Refere https://developer.mozilla.org/en-US/docs/Web/API/Window/open#Window_features for WindowFeatures
       this.ref = window.open(this.url, config.windowName || '_blank', config.windowFeatures);
 
       _dom2.default.disable('data-tab-opener');
 
-      window.newlyTabOpened = {
-        id: this.id,
-        name: this.name || this.windowName,
-        ref: this.ref
-      };
-
       // Push it to the list of tabs
-      _tab2.default.addNew(this);
+      this.tabUtils.addNew(this);
 
       // Return reference for chaining purpose
       return this;
@@ -941,7 +740,7 @@ var Tab = function () {
 exports.default = Tab;
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1040,6 +839,259 @@ UUID = function () {
 exports.default = UUID;
 
 /***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * A Tab utility class to deal with tab operations
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
+
+var _PostMessageEventNamesEnum = __webpack_require__(0);
+
+var _PostMessageEventNamesEnum2 = _interopRequireDefault(_PostMessageEventNamesEnum);
+
+var _array = __webpack_require__(3);
+
+var _array2 = _interopRequireDefault(_array);
+
+var _TabStatusEnum = __webpack_require__(4);
+
+var _TabStatusEnum2 = _interopRequireDefault(_TabStatusEnum);
+
+var _WarningTextEnum = __webpack_require__(1);
+
+var _WarningTextEnum2 = _interopRequireDefault(_WarningTextEnum);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var TabUtils = function () {
+  function TabUtils(config) {
+    _classCallCheck(this, TabUtils);
+
+    this.tabs = [];
+    this.config = config || {};
+  }
+
+  /**
+   * Remove a tab from a list of all tabs.
+   * This is required when users opts for removing the closed tabs from the list of tabs.
+   * This can be done explictly by passing `removeClosedTabs` key while instantiating Parent.
+   * @param  {Object} tab
+   */
+
+
+  _createClass(TabUtils, [{
+    key: '_remove',
+    value: function _remove(tab) {
+      var index = void 0;
+
+      index = _array2.default.searchByKeyName(this.tabs, 'id', tab.id, 'index');
+      this.tabs.splice(index, 1);
+    }
+
+    /**
+     * As explained in `event-listeners/postmessage.js` file,
+     * the data received from postmessage API is further processed based on our convention
+     * @param  {String} msg
+     * @return {String} modified msg
+     */
+
+  }, {
+    key: '_preProcessMessage',
+    value: function _preProcessMessage(msg) {
+      // make msg always an object to support JSON support
+      try {
+        msg = this.config.stringify(msg);
+      } catch (e) {
+        throw new Error(_WarningTextEnum2.default.INVALID_JSON);
+      }
+
+      if (msg && msg.indexOf(_PostMessageEventNamesEnum2.default.PARENT_COMMUNICATED) === -1) {
+        msg = _PostMessageEventNamesEnum2.default.PARENT_COMMUNICATED + msg;
+      }
+
+      return msg;
+    }
+
+    /**
+     * Add a new tab to the Array of tabs
+     * @param  {Object} tab
+     * @return {Object} - this
+     */
+
+  }, {
+    key: 'addNew',
+    value: function addNew(tab) {
+      this.tabs.push(tab);
+      return this;
+    }
+
+    /**
+     * Filter out all the opened tabs
+     * @return {Array} - only the opened tabs
+     */
+
+  }, {
+    key: 'getOpened',
+    value: function getOpened() {
+      return this.tabs.filter(function (tab) {
+        return tab.status === _TabStatusEnum2.default.OPEN;
+      });
+    }
+
+    /**
+     * Filter out all the closed tabs
+     * @return {Array} - only the closed tabs
+     */
+
+  }, {
+    key: 'getClosed',
+    value: function getClosed() {
+      return this.tabs.filter(function (tab) {
+        return tab.status === _TabStatusEnum2.default.CLOSE;
+      });
+    }
+
+    /**
+     * To get list of all tabs(closed/opened).
+     * Note: Closed tabs will not be returned if `removeClosedTabs` key is paased while instantiaiting Parent.
+     * @return {Array} - list of all tabs
+     */
+
+  }, {
+    key: 'getAll',
+    value: function getAll() {
+      return this.tabs;
+    }
+
+    /**
+     * Close a specific tab
+     * @param  {String} id
+     * @return {Object} this
+     */
+
+  }, {
+    key: 'closeTab',
+    value: function closeTab(id) {
+      var tab = _array2.default.searchByKeyName(this.tabs, 'id', id);
+
+      if (tab && tab.ref) {
+        tab.ref.close();
+        tab.status = _TabStatusEnum2.default.CLOSE;
+      }
+
+      return this;
+      // --this.tabs.length;
+    }
+
+    /**
+     * Close all opened tabs using a native method `close` available on window.open reference.
+     * @return {TabUtils} this
+     */
+
+  }, {
+    key: 'closeAll',
+    value: function closeAll() {
+      var i = void 0;
+
+      for (i = 0; i < this.tabs.length; i++) {
+        if (this.tabs[i] && this.tabs[i].ref) {
+          this.tabs[i].ref.close();
+          this.tabs[i].status = _TabStatusEnum2.default.CLOSE;
+        }
+      }
+
+      return this;
+    }
+
+    /**
+     * Send a postmessage to every opened Child tab(excluding itself i.e Parent Tab)
+     * @param  {String} msg
+     * @param  {Boolean} isSiteInsideFrame
+     */
+
+  }, {
+    key: 'broadCastAll',
+    value: function broadCastAll(msg, isSiteInsideFrame) {
+      var i = void 0,
+          tabs = this.getOpened();
+
+      msg = this._preProcessMessage(msg);
+
+      for (i = 0; i < tabs.length; i++) {
+        this.sendMessage(tabs[i], msg, isSiteInsideFrame);
+      }
+
+      return this;
+    }
+
+    /**
+     * Send a postmessage to a specific Child tab
+     * @param  {String} id
+     * @param  {String} msg
+     * @param  {Boolean} isSiteInsideFrame
+     */
+
+  }, {
+    key: 'broadCastTo',
+    value: function broadCastTo(id, msg, isSiteInsideFrame) {
+      var targetedTab = void 0,
+          tabs = this.getAll();
+
+      msg = this._preProcessMessage(msg);
+
+      targetedTab = _array2.default.searchByKeyName(tabs, 'id', id); // TODO: tab.id
+      this.sendMessage(targetedTab, msg, isSiteInsideFrame);
+
+      return this;
+    }
+
+    /**
+     * Send a postMessage to the desired window/frame
+     * @param  {Object}  target
+     * @param  {String}  msg
+     * @param  {Boolean} isSiteInsideFrame
+     */
+
+  }, {
+    key: 'sendMessage',
+    value: function sendMessage(target, msg, isSiteInsideFrame) {
+      var origin = this.config.origin || '*';
+      if (isSiteInsideFrame && target.ref[0]) {
+        for (var i = 0; i < target.ref.length; i++) {
+          target.ref[i].postMessage(msg, origin);
+        }
+      } else if (target.ref && target.ref.top) {
+        target.ref.top.postMessage(msg, origin);
+      }
+    }
+
+    /**
+     * Reset all tabs and state
+     */
+
+  }, {
+    key: 'reset',
+    value: function reset() {
+      this.tabs = [];
+    }
+  }]);
+
+  return TabUtils;
+}();
+
+exports.default = TabUtils;
+
+/***/ }),
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1054,10 +1106,6 @@ var _array = __webpack_require__(3);
 
 var _array2 = _interopRequireDefault(_array);
 
-var _tab = __webpack_require__(2);
-
-var _tab2 = _interopRequireDefault(_tab);
-
 var _WarningTextEnum = __webpack_require__(1);
 
 var _WarningTextEnum2 = _interopRequireDefault(_WarningTextEnum);
@@ -1069,8 +1117,6 @@ var _PostMessageEventNamesEnum2 = _interopRequireDefault(_PostMessageEventNamesE
 __webpack_require__(11);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var PostMessageListener = {};
 
 /*
  * Custom PostMessage Convetions Followed - Sending and Receieving data gracefully
@@ -1096,139 +1142,161 @@ var PostMessageListener = {};
  */
 
 /**
- * OnLoad Event - it serves as an communication establishment source from Child tab
+ * Factory function to create a PostMessageListener bound to a specific tabUtils instance
+ * @param {Object} tabUtils - Instance of TabUtils
+ * @returns {Object} PostMessageListener object with methods bound to the tabUtils instance
  */
-PostMessageListener._onLoad = function (data) {
-  var tabs = void 0,
-      dataToSend = void 0,
-      tabInfo = data.split(_PostMessageEventNamesEnum2.default.LOADED)[1];
-
-  // Child was opened but parent got refereshed, opened a tab i.e.
-  // last opened tab will get refreshed(browser behavior). WOW! Handle this now.
-  if (tabInfo) {
-    try {
-      tabInfo = _tab2.default.config.parse(tabInfo);
-      // If Child knows its UUID, means Parent was refreshed and Child did not
-      if (tabInfo.id) {
-        tabs = _tab2.default.getAll();
-        if (tabs.length) {
-          // Find the specific tab that sent the LOADED message by its ID
-          window.newlyTabOpened = _array2.default.searchByKeyName(tabs, 'id', tabInfo.id);
-          if (window.newlyTabOpened) {
-            window.newlyTabOpened.name = tabInfo.name || tabInfo.windowName;
-          }
-        }
-      }
-    } catch (e) {
-      throw new Error(_WarningTextEnum2.default.INVALID_JSON);
-    }
-  }
-
-  if (window.newlyTabOpened) {
-    try {
-      dataToSend = _PostMessageEventNamesEnum2.default.HANDSHAKE_WITH_PARENT;
-      dataToSend += _tab2.default.config.stringify({
-        id: window.newlyTabOpened.id,
-        name: window.newlyTabOpened.name || window.newlyTabOpened.windowName,
-        parentName: window.name
-      });
-      _tab2.default.sendMessage(window.newlyTabOpened, dataToSend, tabInfo.isSiteInsideFrame);
-    } catch (e) {
-      throw new Error(_WarningTextEnum2.default.INVALID_JSON);
-    }
-  }
-};
-
-/**
- * onCustomMessage Event - Any sort of custom message by child is treated here
- * @param  {Object} data
- *
- * The method fires an event to notify Parent regarding Child's behavior
- */
-PostMessageListener._onCustomMessage = function (data, type) {
-  var event = void 0,
-      eventData = void 0,
-      tabInfo = data.split(type)[1];
-
-  try {
-    tabInfo = _tab2.default.config.parse(tabInfo);
-  } catch (e) {
-    throw new Error(_WarningTextEnum2.default.INVALID_JSON);
-  }
-
-  eventData = {
-    tabInfo: tabInfo,
-    type: type
-  };
-
-  event = new CustomEvent('onCustomChildMessage', { detail: eventData });
-
-  window.dispatchEvent(event);
-  // window.newlyTabOpened = null;
-};
-
-/**
- * onBeforeUnload Event - Tells parent that either Child tab was closed or refreshed.
- * Child uses native `ON_BEFORE_UNLOAD` method to notify Parent.
- *
- * It sets the newlyTabOpened variable accordingly
- *
- * @param  {Object} data
- */
-PostMessageListener._onBeforeUnload = function (data) {
-  var tabs = void 0,
-      tabInfo = data.split(_PostMessageEventNamesEnum2.default.ON_BEFORE_UNLOAD)[1];
-
-  try {
-    tabInfo = _tab2.default.config.parse(tabInfo);
-  } catch (e) {
-    throw new Error(_WarningTextEnum2.default.INVALID_JSON);
-  }
-
-  if (_tab2.default.tabs.length) {
-    tabs = _tab2.default.getAll();
-    window.newlyTabOpened = _array2.default.searchByKeyName(tabs, 'id', tabInfo.id) || window.newlyTabOpened;
-  }
-
-  // CustomEvent is not supported in IE, but polyfill will take care of it
-  var event = new CustomEvent('onChildUnload', { detail: tabInfo });
-
-  window.dispatchEvent(event);
-};
-
-/**
- * onNewTab - It's the entry point for data processing after receiving any postmessage form any Child Tab
- * @param  {Object} message
- */
-PostMessageListener.onNewTab = function (message) {
-  var data = message.data;
+function createPostMessageListener(tabUtils) {
+  var PostMessageListener = {};
 
   /**
-   * Safe check - This happens when CHild Tab gets closed just after sending a message.
-   * No need to go further from this point.
-   * Tab status is automatically fetched using our polling mechanism written in `Parent.js` file.
+   * OnLoad Event - it serves as an communication establishment source from Child tab
    */
-  if (!data || typeof data !== 'string' || !_tab2.default.tabs.length) {
-    return false;
-  }
+  PostMessageListener._onLoad = function (data, source) {
+    var tab = void 0,
+        tabs = void 0,
+        dataToSend = void 0,
+        tabInfo = data.split(_PostMessageEventNamesEnum2.default.LOADED)[1];
 
-  // `origin` check for secureity point of view
-  if (_tab2.default.config.origin && _tab2.default.config.origin !== message.origin) {
-    return false;
-  }
+    // Child was opened but parent got refreshed, opened a tab i.e.
+    // last opened tab will get refreshed(browser behavior). WOW! Handle this now.
+    if (tabInfo) {
+      try {
+        tabInfo = tabUtils.config.parse(tabInfo);
+        // If Child knows its UUID, means Parent was refreshed and Child did not
+        if (tabInfo.id) {
+          tabs = tabUtils.getAll();
+          if (tabs.length) {
+            // Find the specific tab that sent the LOADED message by its ID
+            tab = _array2.default.searchByKeyName(tabs, 'id', tabInfo.id);
+            if (tab) {
+              tab.name = tabInfo.name || tabInfo.windowName;
+            }
+          }
+        }
+      } catch (e) {
+        throw new Error(_WarningTextEnum2.default.INVALID_JSON);
+      }
+    }
 
-  if (data.indexOf(_PostMessageEventNamesEnum2.default.LOADED) > -1) {
-    PostMessageListener._onLoad(data);
-  } else if (data.indexOf(_PostMessageEventNamesEnum2.default.CUSTOM) > -1) {
-    PostMessageListener._onCustomMessage(data, _PostMessageEventNamesEnum2.default.CUSTOM);
-  } else if (data.indexOf(_PostMessageEventNamesEnum2.default.HANDSHAKE) > -1) {
-    PostMessageListener._onCustomMessage(data, _PostMessageEventNamesEnum2.default.HANDSHAKE);
-  } else if (data.indexOf(_PostMessageEventNamesEnum2.default.ON_BEFORE_UNLOAD) > -1) {
-    PostMessageListener._onBeforeUnload(data);
-  }
-};
+    // If no target tab found from existing session data, use the most recently opened tab
+    // This handles the case of newly opened tabs that don't have session data yet
+    if (!tab) {
+      tabs = tabUtils.getAll();
+      tab = tabs.find(function (t) {
+        return t.ref === source;
+      });
+    }
 
-exports.default = PostMessageListener;
+    // If still no tab found, try to find by source reference
+    if (!tab && source) {
+      tabs = tabUtils.getAll();
+      tab = tabs.find(function (t) {
+        return t.ref === source;
+      });
+    }
+
+    // Send handshake to the identified target tab
+    if (tab) {
+      try {
+        dataToSend = _PostMessageEventNamesEnum2.default.HANDSHAKE_WITH_PARENT;
+        dataToSend += tabUtils.config.stringify({
+          id: tab.id,
+          name: tab.name || tab.windowName,
+          parentName: window.name
+        });
+        tabUtils.sendMessage(tab, dataToSend, tabInfo && tabInfo.isSiteInsideFrame);
+      } catch (e) {
+        throw new Error(_WarningTextEnum2.default.INVALID_JSON);
+      }
+    }
+  };
+
+  /**
+   * onCustomMessage Event - Any sort of custom message by child is treated here
+   * @param  {Object} data
+   *
+   * The method fires an event to notify Parent regarding Child's behavior
+   */
+  PostMessageListener._onCustomMessage = function (data, type) {
+    var event = void 0,
+        eventData = void 0,
+        tabInfo = data.split(type)[1];
+
+    try {
+      tabInfo = tabUtils.config.parse(tabInfo);
+    } catch (e) {
+      throw new Error(_WarningTextEnum2.default.INVALID_JSON);
+    }
+
+    eventData = {
+      tabInfo: tabInfo,
+      type: type
+    };
+
+    event = new CustomEvent('onCustomChildMessage', { detail: eventData });
+
+    window.dispatchEvent(event);
+  };
+
+  /**
+   * onBeforeUnload Event - Tells parent that either Child tab was closed or refreshed.
+   * Child uses native `ON_BEFORE_UNLOAD` method to notify Parent.
+   *
+   * @param  {Object} data
+   */
+  PostMessageListener._onBeforeUnload = function (data) {
+    var tabInfo = data.split(_PostMessageEventNamesEnum2.default.ON_BEFORE_UNLOAD)[1];
+
+    try {
+      tabInfo = tabUtils.config.parse(tabInfo);
+    } catch (e) {
+      throw new Error(_WarningTextEnum2.default.INVALID_JSON);
+    }
+
+    // CustomEvent is not supported in IE, but polyfill will take care of it
+    var event = new CustomEvent('onChildUnload', { detail: tabInfo });
+
+    window.dispatchEvent(event);
+  };
+
+  /**
+   * onNewTab - It's the entry point for data processing after receiving any postmessage form any Child Tab
+   * @param  {Object} message
+   */
+  PostMessageListener.onNewTab = function (message) {
+    var source = message.source;
+    var data = message.data;
+
+    /**
+     * Safe check - This happens when CHild Tab gets closed just after sending a message.
+     * No need to go further from this point.
+     * Tab status is automatically fetched using our polling mechanism written in `Parent.js` file.
+     */
+    if (!data || typeof data !== 'string' || !tabUtils.tabs.length) {
+      return false;
+    }
+
+    // `origin` check for secureity point of view
+    if (tabUtils.config.origin && tabUtils.config.origin !== message.origin) {
+      return false;
+    }
+
+    if (data.indexOf(_PostMessageEventNamesEnum2.default.LOADED) > -1) {
+      PostMessageListener._onLoad(data, source);
+    } else if (data.indexOf(_PostMessageEventNamesEnum2.default.CUSTOM) > -1) {
+      PostMessageListener._onCustomMessage(data, _PostMessageEventNamesEnum2.default.CUSTOM);
+    } else if (data.indexOf(_PostMessageEventNamesEnum2.default.HANDSHAKE) > -1) {
+      PostMessageListener._onCustomMessage(data, _PostMessageEventNamesEnum2.default.HANDSHAKE);
+    } else if (data.indexOf(_PostMessageEventNamesEnum2.default.ON_BEFORE_UNLOAD) > -1) {
+      PostMessageListener._onBeforeUnload(data);
+    }
+  };
+
+  return PostMessageListener;
+}
+
+exports.default = createPostMessageListener;
 
 /***/ }),
 /* 11 */

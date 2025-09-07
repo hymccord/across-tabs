@@ -1,13 +1,13 @@
 import Tab from './tab';
 
-import tabUtils from './utils/tab';
+import TabUtils from './utils/tab';
 import domUtils from './utils/dom';
 
 import TabStatusEnum from './enums/TabStatusEnum';
 import WarningTextEnum from './enums/WarningTextEnum';
 import PostMessageEventNamesEnum from './enums/PostMessageEventNamesEnum';
 
-import PostMessageListener from './event-listeners/postmessage';
+import createPostMessageListener from './event-listeners/postmessage';
 
 let heartBeat, tab;
 
@@ -33,13 +33,13 @@ class Parent {
       config.stringify = JSON.stringify;
     }
 
-    // reset tabs with every new Object
-    tabUtils.tabs = [];
+    // Create a new TabUtils instance for this Parent instance
+    this.tabUtils = new TabUtils(config);
 
-    this.Tab = Tab;
+    // Create a PostMessageListener bound to this Parent's tabUtils instance
+    this.postMessageListener = createPostMessageListener(this.tabUtils);
+
     Object.assign(this, config);
-
-    tabUtils.config = config;
 
     if (this.shouldInitImmediately) {
       this.init();
@@ -48,8 +48,8 @@ class Parent {
 
   addInterval() {
     let i,
-      tabs = tabUtils.getAll(),
-      openedTabs = tabUtils.getOpened();
+      tabs = this.tabUtils.getAll(),
+      openedTabs = this.tabUtils.getOpened();
 
     // don't poll if all tabs are in CLOSED states
     if (!openedTabs || !openedTabs.length) {
@@ -105,8 +105,8 @@ class Parent {
 
     // OPEN to CLOSE state
     if (oldStatus === TabStatusEnum.OPEN && newStatus === TabStatusEnum.CLOSE) {
-      // remove tab from tabUtils
-      tabUtils._remove(tab);
+      // remove tab from this.tabUtils
+      this.tabUtils._remove(tab);
     }
     // Change from CLOSE to OPEN state is never gonna happen ;)
   }
@@ -140,8 +140,8 @@ class Parent {
    * Attach postmessage, native and custom listeners to the window
    */
   addEventListeners() {
-    window.removeEventListener('message', PostMessageListener.onNewTab);
-    window.addEventListener('message', PostMessageListener.onNewTab);
+    window.removeEventListener('message', this.postMessageListener.onNewTab);
+    window.addEventListener('message', this.postMessageListener.onNewTab);
 
     window.removeEventListener('onCustomChildMessage', this.customEventUnListener);
     window.addEventListener('onCustomChildMessage', ev => this.customEventUnListener(ev));
@@ -151,7 +151,7 @@ class Parent {
 
     // Let children tabs know when Parent is closed / refereshed.
     window.onbeforeunload = () => {
-      tabUtils.broadCastAll(PostMessageEventNamesEnum.PARENT_DISCONNECTED);
+      this.tabUtils.broadCastAll(PostMessageEventNamesEnum.PARENT_DISCONNECTED);
     };
   }
 
@@ -169,7 +169,7 @@ class Parent {
    * @return {Array}
    */
   getAllTabs() {
-    return tabUtils.getAll();
+    return this.tabUtils.getAll();
   }
 
   /**
@@ -177,7 +177,7 @@ class Parent {
    * @return {Array}
    */
   getOpenedTabs() {
-    return tabUtils.getOpened();
+    return this.tabUtils.getOpened();
   }
 
   /**
@@ -185,7 +185,7 @@ class Parent {
    * @return {Array}
    */
   getClosedTabs() {
-    return tabUtils.getClosed();
+    return this.tabUtils.getClosed();
   }
 
   /**
@@ -193,7 +193,7 @@ class Parent {
    * @return {Object}
    */
   closeAllTabs() {
-    return tabUtils.closeAll();
+    return this.tabUtils.closeAll();
   }
 
   /**
@@ -201,7 +201,7 @@ class Parent {
    * @return {Object}
    */
   closeTab(id) {
-    return tabUtils.closeTab(id);
+    return this.tabUtils.closeTab(id);
   }
 
   /**
@@ -209,7 +209,7 @@ class Parent {
    * @return {Object}
    */
   broadCastAll(msg) {
-    return tabUtils.broadCastAll(msg);
+    return this.tabUtils.broadCastAll(msg);
   }
 
   /**
@@ -217,7 +217,7 @@ class Parent {
    * @return {Object}
    */
   broadCastTo(id, msg) {
-    return tabUtils.broadCastTo(id, msg);
+    return this.tabUtils.broadCastTo(id, msg);
   }
 
   /**
@@ -235,7 +235,7 @@ class Parent {
       throw new Error(WarningTextEnum.URL_REQUIRED);
     }
 
-    tab = new this.Tab();
+    tab = new Tab(this.tabUtils);
     tab.create(config);
 
     // If polling is already there, don't set it again

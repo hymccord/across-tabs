@@ -1,4 +1,3 @@
-import tabUtils from './utils/tab';
 import UUID from './vendor/uuid';
 import domUtils from './utils/dom';
 
@@ -6,10 +5,12 @@ import domUtils from './utils/dom';
 class Tab {
   /**
    * Invoked when the object is instantiated
+   * @param {Object} tabUtils - Instance of TabUtils to use for this tab
    */
-  constructor() {
+  constructor(tabUtils) {
     // Set name of Parent tab if not already defined
     window.name = window.name || 'PARENT_TAB';
+    this.tabUtils = tabUtils;
   }
   /**
    * Open a new tab
@@ -19,21 +20,15 @@ class Tab {
   create(config) {
     config = config || {};
     Object.assign(this, config);
-    this.id = UUID.generate() || tabUtils.tabs.length + 1;
+    this.id = UUID.generate() || this.tabUtils.tabs.length + 1;
     this.status = 'open';
     // Refere https://developer.mozilla.org/en-US/docs/Web/API/Window/open#Window_features for WindowFeatures
     this.ref = window.open(this.url, config.windowName || '_blank', config.windowFeatures);
 
     domUtils.disable('data-tab-opener');
 
-    window.newlyTabOpened = {
-      id: this.id,
-      name: this.name || this.windowName,
-      ref: this.ref
-    };
-
     // Push it to the list of tabs
-    tabUtils.addNew(this);
+    this.tabUtils.addNew(this);
 
     // Return reference for chaining purpose
     return this;
