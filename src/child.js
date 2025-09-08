@@ -130,6 +130,10 @@ class Child {
       return;
     }
 
+    if (window.top.opener !== message.source) {
+      return;
+    }
+
     // `origin` check for secureity point of view
     if (this.config.origin && this.config.origin !== message.origin) {
       return;

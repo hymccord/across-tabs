@@ -30,7 +30,7 @@
       var child = new AcrossTabs.default.Child({
         onReady: onReady,
         onInitialize: onInitialize,
-        handshakeExpiryLimit: 4000, // msec
+        handshakeExpiryLimit: 600000, // msec
         onParentDisconnect: onParentDisconnect,
         onParentCommunication: onParentCommunication
       });
@@ -59,6 +59,9 @@
 
       function onInitialize() {
         var tabInfo = child.getTabInfo();
+        console.log(`
+            Child onInitialize. I am ${window.name} but my tabInfo says I am ${tabInfo.name}
+            `);
 
         var data =
           '' +

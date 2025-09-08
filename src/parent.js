@@ -156,6 +156,17 @@ class Parent {
   }
 
   /**
+   * Remove all event listeners attached to window
+   */
+  removeEventListeners() {
+    this.tabUtils.broadCastAll(PostMessageEventNamesEnum.PARENT_DISCONNECTED);
+    window.removeEventListener('message', this.postMessageListener.onNewTab);
+    window.removeEventListener('onCustomChildMessage', this.customEventUnListener);
+    window.removeEventListener('onChildUnload', this.onChildUnload);
+    window.onbeforeunload = null;
+  }
+
+  /**
    * API methods exposed for Public
    *
    * Re-enable the link/btn which got disabled on clicking

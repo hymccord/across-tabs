@@ -539,6 +539,20 @@ var Parent = function () {
     }
 
     /**
+     * Remove all event listeners attached to window
+     */
+
+  }, {
+    key: 'removeEventListeners',
+    value: function removeEventListeners() {
+      this.tabUtils.broadCastAll(_PostMessageEventNamesEnum2.default.PARENT_DISCONNECTED);
+      window.removeEventListener('message', this.postMessageListener.onNewTab);
+      window.removeEventListener('onCustomChildMessage', this.customEventUnListener);
+      window.removeEventListener('onChildUnload', this.onChildUnload);
+      window.onbeforeunload = null;
+    }
+
+    /**
      * API methods exposed for Public
      *
      * Re-enable the link/btn which got disabled on clicking
@@ -1511,6 +1525,10 @@ var Child = function () {
           data = message.data;
 
       if (!data || typeof data !== 'string') {
+        return;
+      }
+
+      if (window.top.opener !== message.source) {
         return;
       }
 
